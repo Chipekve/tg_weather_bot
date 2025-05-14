@@ -2,6 +2,7 @@
 config.py
 .env
 *.env
+
 # Кэш и мусор
 __pycache__/
 *.pyc
@@ -9,3 +10,4 @@ __pycache__/
 .idea/
 .vscode/
 .DS_Store
+.venv
