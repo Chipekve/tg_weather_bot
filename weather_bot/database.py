@@ -20,11 +20,10 @@ class Database:
             conn.commit()
 
     def _get_connection(self):
-        """Возвращает соединение с БД."""
         return sqlite3.connect(self.db_path)
 
+#  Сохраняет/обновляет город пользователя
     def save_user_city(self, user_id: int, username: str, city: str, city_id: Optional[str] = None):
-        """Сохраняет/обновляет город пользователя."""
         try:
             with self._get_connection() as conn:
                 conn.execute(
@@ -36,9 +35,8 @@ class Database:
                 conn.commit()
         except sqlite3.Error as e:
             logging.error(f"Ошибка БД: {e}", exc_info=True)
-
+    #  Возвращает город и city_id пользователя
     def get_user_city(self, user_id: int) -> Optional[Tuple[str, str]]:
-        """Возвращает город и city_id пользователя."""
         try:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
