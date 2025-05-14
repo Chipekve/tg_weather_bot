@@ -61,7 +61,7 @@ async def search_cities(query: str) -> list | None:
         return None
 
 
-# --- Хэндлеры ---
+# --- Хэндлеры / роутеры
 @router.message(Command("start"))
 async def cmd_start(message: Message):
     try:
@@ -76,7 +76,7 @@ async def cmd_start(message: Message):
             reply_markup=get_reply_menu()
         )
 
-
+#  тута функция на вывод погоды в формате
 async def show_weather(user_id: int, message: Message):
     user_city = db.get_user_city(user_id)
     if not user_city or not user_city[0]:
@@ -98,13 +98,12 @@ async def show_weather(user_id: int, message: Message):
         f"• ☁️ Состояние: {weather['current']['condition']['text']}"
     )
 
+#  Magic фильтр на кнопку чо по погоде
 @router.message(F.text == '🤌🏻 Чо по погоде ?')
 async def handle_weather(message: Message):
     await show_weather(message.from_user.id, message)
-    await asyncio.sleep(2)
-    await message.delete()
 
-
+#  Magic фильтр на кнопку город
 @router.message(F.text == 'чо по городу 🤌🏻')
 async def show_city(message: Message):
     user_city = db.get_user_city(message.from_user.id)
@@ -113,10 +112,8 @@ async def show_city(message: Message):
         if user_city and user_city[0]
         else "❌ Город не установлен. Нажми 'поменять что-то в жизни'"
     )
-    await asyncio.sleep(2)
-    await message.delete()
 
-
+#  Magic фильтр на... короче понятно уже на что 🤡
 @router.message(F.text == 'поменять что-то в жизни')
 async def start_city_change(message: Message, state: FSMContext):
     msg = await message.answer("📝 Введи название города:")
@@ -125,19 +122,19 @@ async def start_city_change(message: Message, state: FSMContext):
     await asyncio.sleep(2)
     await message.delete()
 
-
+#  тут конечно сложная штука, функция в роутере на изменение города и т/д
 @router.message(UserState.changing_city)
 async def process_city(message: Message, state: FSMContext, bot: Bot):
     state_data = await state.get_data()
     temp_msg_id = state_data.get('temp_msg_id')
 
-    # Удаляем сообщение пользователя (опционально)
+    #  Удаляем сообщение пользователя
     try:
         await message.delete()
     except:
         pass
 
-    # 1. Меняем текст на "Ищем варианты..."
+    #  Меняем текст
     if temp_msg_id:
         try:
             await bot.edit_message_text(
@@ -160,10 +157,10 @@ async def process_city(message: Message, state: FSMContext, bot: Bot):
             text="⚠️ Города не найдены. Попробуй еще раз:"
         )
         return
-
+    #  тут подставляем инлайн кнопки с вариантами городов
     keyboard = cities_keyboard(cities)
 
-    # 4. Заменяем "Ищем варианты..." на сообщение с кнопками
+    #  Заменяем "Ищем варианты..." на сообщение с кнопками
     await bot.edit_message_text(
         chat_id=message.chat.id,
         message_id=temp_msg_id,
@@ -174,10 +171,9 @@ async def process_city(message: Message, state: FSMContext, bot: Bot):
     user_search_data[message.from_user.id] = cities
     await state.clear()
 
-
+#  Обработка выбора города из списка
 @router.callback_query(F.data.startswith("city_"))
 async def handle_city_selection(callback: CallbackQuery):
-    """Обработка выбора города из списка"""
     try:
         city_id = callback.data.split("_")[1]
         user_id = callback.from_user.id

@@ -27,7 +27,7 @@ def setup_logging():
         handlers=[handler]
     )
 
-
+#  точка входа
 async def main():
     setup_logging()
     logger = logging.getLogger(__name__)

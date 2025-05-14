@@ -2,6 +2,7 @@
 config.py
 .env
 *.env
+users.db
 
 # Кэш и мусор
 __pycache__/
