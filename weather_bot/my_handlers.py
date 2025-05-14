@@ -119,20 +119,12 @@ async def start_city_change(message: Message, state: FSMContext):
     msg = await message.answer("📝 Введи название города:")
     await state.update_data(temp_msg_id=msg.message_id)
     await state.set_state(UserState.changing_city)
-    await asyncio.sleep(2)
-    await message.delete()
 
 #  тут конечно сложная штука, функция в роутере на изменение города и т/д
 @router.message(UserState.changing_city)
 async def process_city(message: Message, state: FSMContext, bot: Bot):
     state_data = await state.get_data()
     temp_msg_id = state_data.get('temp_msg_id')
-
-    #  Удаляем сообщение пользователя
-    try:
-        await message.delete()
-    except:
-        pass
 
     #  Меняем текст
     if temp_msg_id:
