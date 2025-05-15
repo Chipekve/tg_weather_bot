@@ -1,9 +1,8 @@
 import asyncio
 import aiohttp
-import re
 import logging
-from emoji import EMOJI_DATA
 
+from emoji import EMOJI_DATA
 from aiogram import F, Router
 from aiogram.filters import Command
 from aiogram.types import Message, CallbackQuery
@@ -16,14 +15,13 @@ from keyboards import get_reply_menu, cities_keyboard
 from database import db
 
 router = Router()
-user_search_data = {}  # Временное хранилище для результатов поиска городов
-
 
 class UserState(StatesGroup):
     changing_city = State()
 
-
-async def fetch_weather(city: str = None, city_id: str = None) -> dict | None:
+# в fetch_weather и search_cities добавлены retry-декораторы
+# для устойчивости и логика защиты от сбоев API запросов
+async def fetch_weather(city: str = None, city_id: str = None, retries: int = 3) -> dict | None:
     if not city and not city_id:
         return None
 
@@ -33,32 +31,43 @@ async def fetch_weather(city: str = None, city_id: str = None) -> dict | None:
         "q": f"id:{city_id}" if city_id else city
     }
 
-    try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(
+    for attempt in range(retries):
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(
                     "http://api.weatherapi.com/v1/current.json",
                     params=params
-            ) as response:
-                return await response.json() if response.status == 200 else None
-    except Exception as e:
-        logging.error(f"Weather API error: {e}")
-        return None
+                ) as response:
+                    if response.status == 200:
+                        return await response.json()
+                    logging.warning(f"WeatherAPI returned status {response.status}")
+        except Exception as e:
+            logging.error(f"Weather API error on attempt {attempt + 1}: {e}")
 
+        await asyncio.sleep(1)
 
-async def search_cities(query: str) -> list | None:
+    return None
+
+async def search_cities(query: str, retries: int = 3) -> list | None:
     if len(query) < 2:
         return None
 
-    try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(
+    for attempt in range(retries):
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(
                     "http://api.weatherapi.com/v1/search.json",
                     params={"key": WEATHER_API_KEY, "q": query}
-            ) as response:
-                return await response.json() if response.status == 200 else None
-    except Exception as e:
-        logging.error(f"City search error: {e}")
-        return None
+                ) as response:
+                    if response.status == 200:
+                        return await response.json()
+                    logging.warning(f"City search failed with status {response.status}")
+        except Exception as e:
+            logging.error(f"City search error on attempt {attempt + 1}: {e}")
+
+        await asyncio.sleep(1)
+
+    return None
 
 
 # --- Хэндлеры / роутеры
@@ -78,12 +87,14 @@ async def cmd_start(message: Message):
 
 #  тута функция на вывод погоды в формате
 async def show_weather(user_id: int, message: Message):
+
     user_city = db.get_user_city(user_id)
     if not user_city or not user_city[0]:
         await message.answer("❌ Сначала укажи город через кнопку 'поменять что-то в жизни'")
         return
 
     weather = await fetch_weather(city=user_city[0], city_id=user_city[1])
+
     if not weather:
         await message.answer("⚠️ Не удалось получить данные. Попробуй позже")
         return
@@ -134,7 +145,6 @@ async def process_city(message: Message, state: FSMContext, bot: Bot):
                 message_id=temp_msg_id,
                 text="🔍 Ищу варианты..."
             )
-            await asyncio.sleep(2)
         except:
             new_msg = await message.answer("🔍 Ищу варианты...")
             temp_msg_id = new_msg.message_id
@@ -160,21 +170,23 @@ async def process_city(message: Message, state: FSMContext, bot: Bot):
         reply_markup=keyboard
     )
 
-    user_search_data[message.from_user.id] = cities
-    await state.clear()
+    await state.update_data(cities=cities)
+    # await state.clear()
 
 #  Обработка выбора города из списка
 @router.callback_query(F.data.startswith("city_"))
-async def handle_city_selection(callback: CallbackQuery):
+async def handle_city_selection(callback: CallbackQuery, state: FSMContext):
     try:
         city_id = callback.data.split("_")[1]
         user_id = callback.from_user.id
 
-        if user_id not in user_search_data:
+        state_data = await state.get_data()
+        cities = state_data.get("cities")
+        if not cities:
             return await callback.answer("❌ Сессия истекла", show_alert=True)
 
         selected_city = next(
-            (city for city in user_search_data[user_id] if str(city.get('id')) == city_id),
+            (city for city in cities if str(city.get('id')) == city_id),
             None
         )
         if not selected_city:
@@ -187,15 +199,34 @@ async def handle_city_selection(callback: CallbackQuery):
             city_id=city_id
         )
 
-        del user_search_data[user_id]
         await callback.message.edit_text(f"✅ {selected_city['name']} я это запишу 👀✍️")
         await asyncio.sleep(1)
         await callback.message.delete()
         await show_weather(callback.from_user.id, callback.message)
+        await state.clear()
         await callback.answer()
+
 
     except Exception as e:
         logging.error(f"City selection error: {e}", exc_info=True)
+        await callback.answer("⚠️ Ошибка сервера", show_alert=True)
+
+#  наконец-то обработчик для пагинации, нормально заработает
+@router.callback_query(F.data.startswith("page_"))
+async def handle_pagination(callback: CallbackQuery, state: FSMContext):
+    # Логика обработки переключения страниц списка городов
+    page = int(callback.data.split("_")[1])
+    state_data = await state.get_data()
+    cities = state_data.get("cities")
+    if not cities:
+        return await callback.answer("❌ Сессия истекла", show_alert=True)
+
+    keyboard = cities_keyboard(cities, page=page)
+    try:
+        await callback.message.edit_reply_markup(reply_markup=keyboard)
+        await callback.answer()
+    except Exception as e:
+        logging.error(f"Pagination error: {e}", exc_info=True)
         await callback.answer("⚠️ Ошибка сервера", show_alert=True)
 
 

@@ -1,5 +1,5 @@
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
-
+from typing import List, Dict
 
 # --- reply кнопкА
 def get_reply_menu():
@@ -9,9 +9,9 @@ def get_reply_menu():
     ]
     return ReplyKeyboardMarkup(keyboard=keyboard, resize_keyboard=True, one_time_keyboard=False)
 
-
 #  Инлайн кнопкА
-def cities_keyboard(cities: list, page: int = 0, per_page: int = 5):
+CITIES_PER_PAGE = 2
+def cities_keyboard(cities: List[Dict[str, str]], page: int = 0, per_page: int = CITIES_PER_PAGE):
     start_idx = page * per_page
     end_idx = start_idx + per_page
     current_cities = cities[start_idx:end_idx]
