@@ -1,9 +1,9 @@
 import asyncio
 import logging
 import colorlog
+import os
 from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
-from config import BOT_TOKEN
 from my_handlers import router
 from database import db
 
@@ -27,6 +27,7 @@ def setup_logging():
     )
 
 #  Глобально создаём bot — чтобы потом в shutdown его закрыть (уебать)
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher(storage=MemoryStorage())
 dp.include_router(router)
