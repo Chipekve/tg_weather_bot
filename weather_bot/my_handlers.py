@@ -1,7 +1,7 @@
 import asyncio
 import aiohttp
 import logging
-
+import os
 from emoji import EMOJI_DATA
 from aiogram import F, Router
 from aiogram.filters import Command
@@ -10,11 +10,11 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram import Bot
 
-from config import WEATHER_API_KEY
 from keyboards import get_reply_menu, cities_keyboard
 from database import db
 
 router = Router()
+WEATHER_API_KEY = os.getenv("WEATHER_API_KEY")
 
 class UserState(StatesGroup):
     changing_city = State()
