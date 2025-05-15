@@ -229,7 +229,6 @@ async def handle_pagination(callback: CallbackQuery, state: FSMContext):
         logging.error(f"Pagination error: {e}", exc_info=True)
         await callback.answer("⚠️ Ошибка сервера", show_alert=True)
 
-
 # --- Хэндлеры медиа
 @router.message(F.photo)
 async def handle_photo(message: Message):
