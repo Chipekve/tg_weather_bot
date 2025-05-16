@@ -29,7 +29,7 @@ def setup_logging():
 
 #  Глобально создаём bot — чтобы потом в shutdown его закрыть (уебать)
 load_dotenv()
-BOT_TOKEN = os.getenv("BOT_TOKEN")
+BOT_TOKEN = os.getenv("BOT_TOKEN", "").strip()
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher(storage=MemoryStorage())
 dp.include_router(router)
