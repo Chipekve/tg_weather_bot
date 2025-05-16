@@ -1,1 +1,1 @@
-worker: python -m weather_bot.bot
+worker: python weather_bot/bot.py
