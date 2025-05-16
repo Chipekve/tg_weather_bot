@@ -2,6 +2,8 @@ import asyncio
 import aiohttp
 import logging
 import os
+
+from dotenv import load_dotenv
 from emoji import EMOJI_DATA
 from aiogram import F, Router
 from aiogram.filters import Command
@@ -14,6 +16,7 @@ from keyboards import get_reply_menu, cities_keyboard
 from database import db
 
 router = Router()
+load_dotenv()
 WEATHER_API_KEY = os.getenv("WEATHER_API_KEY")
 
 class UserState(StatesGroup):
@@ -68,7 +71,6 @@ async def search_cities(query: str, retries: int = 3) -> list | None:
         await asyncio.sleep(1)
 
     return None
-
 
 # --- Хэндлеры / роутеры
 @router.message(Command("start"))
@@ -136,7 +138,6 @@ async def start_city_change(message: Message, state: FSMContext):
 async def process_city(message: Message, state: FSMContext, bot: Bot):
     state_data = await state.get_data()
     temp_msg_id = state_data.get('temp_msg_id')
-
     #  Меняем текст
     if temp_msg_id:
         try:
@@ -161,7 +162,6 @@ async def process_city(message: Message, state: FSMContext, bot: Bot):
         return
     #  тут подставляем инлайн кнопки с вариантами городов
     keyboard = cities_keyboard(cities)
-
     #  Заменяем "Ищем варианты..." на сообщение с кнопками
     await bot.edit_message_text(
         chat_id=message.chat.id,
@@ -171,8 +171,6 @@ async def process_city(message: Message, state: FSMContext, bot: Bot):
     )
 
     await state.update_data(cities=cities)
-    # await state.clear()
-
 #  Обработка выбора города из списка
 @router.callback_query(F.data.startswith("city_"))
 async def handle_city_selection(callback: CallbackQuery, state: FSMContext):
@@ -205,7 +203,6 @@ async def handle_city_selection(callback: CallbackQuery, state: FSMContext):
         await show_weather(callback.from_user.id, callback.message)
         await state.clear()
         await callback.answer()
-
 
     except Exception as e:
         logging.error(f"City selection error: {e}", exc_info=True)
@@ -250,7 +247,6 @@ async def handle_sticker(message: Message):
         reply_to_message_id=message.message_id
     )
 
-
 @router.message(F.text)
 async def handle_text(message: Message):
     text = message.text
@@ -264,7 +260,6 @@ async def handle_text(message: Message):
         await message.delete()
     else:
         await message.answer("Зачем ты со мной говоришь?👀\nЯ по погоде двигаюсь, очнись 🐴")
-
 
 @router.message(F.voice)
 async def handle_voice(message: Message):

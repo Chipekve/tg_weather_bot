@@ -2,11 +2,12 @@ import asyncio
 import logging
 import colorlog
 import os
+
+from dotenv import load_dotenv
 from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
 from my_handlers import router
 from database import db
-
 
 # Настройка цвЯтного логирования
 def setup_logging():
@@ -27,6 +28,7 @@ def setup_logging():
     )
 
 #  Глобально создаём bot — чтобы потом в shutdown его закрыть (уебать)
+load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher(storage=MemoryStorage())
