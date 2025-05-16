@@ -89,8 +89,8 @@ async def cmd_start(message: Message):
 
 #  тута функция на вывод погоды в формате
 async def show_weather(user_id: int, message: Message):
-
     user_city = db.get_user_city(user_id)
+
     if not user_city or not user_city[0]:
         await message.answer("❌ Сначала укажи город через кнопку 'поменять что-то в жизни'")
         return
@@ -119,10 +119,11 @@ async def handle_weather(message: Message):
 #  Magic фильтр на кнопку город
 @router.message(F.text == 'чо по городу 🤌🏻')
 async def show_city(message: Message):
-    user_city = db.get_user_city(message.from_user.id)
+    user_city = await db.get_user_city(message.from_user.id)
+
     await message.answer(
-        f"📍Ты че забыл? {user_city[0]} 🤭"
-        if user_city and user_city[0]
+        f"📍Ты че забыл? {user_city.city} 🤭"
+        if user_city and user_city.city
         else "❌ Город не установлен. Нажми 'поменять что-то в жизни'"
     )
 
@@ -190,7 +191,7 @@ async def handle_city_selection(callback: CallbackQuery, state: FSMContext):
         if not selected_city:
             return await callback.answer("❌ Ошибка выбора", show_alert=True)
 
-        db.save_user_city(  # Используем метод из db
+        db.save_user_city(
             user_id=user_id,
             username=callback.from_user.username,
             city=selected_city['name'],
