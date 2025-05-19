@@ -4,7 +4,7 @@ from typing import List, Dict
 # --- reply кнопкА
 def get_reply_menu():
     keyboard = [
-        [KeyboardButton(text='🤌🏻 Чо по погоде ?')],
+        [KeyboardButton(text='👀Чо по погоде ?')],
         [KeyboardButton(text='чо по городу 🤌🏻'), KeyboardButton(text='поменять что-то в жизни')]
     ]
     return ReplyKeyboardMarkup(keyboard=keyboard, resize_keyboard=True, one_time_keyboard=False)

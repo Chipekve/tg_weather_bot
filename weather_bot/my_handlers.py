@@ -3,7 +3,6 @@ import aiohttp
 import logging
 import os
 
-from dotenv import load_dotenv
 from emoji import EMOJI_DATA
 from aiogram import F, Router
 from aiogram.filters import Command
@@ -12,65 +11,14 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram import Bot
 
+from weather_api import fetch_weather, search_cities
 from keyboards import get_reply_menu, cities_keyboard
 from database import db
 
 router = Router()
-load_dotenv()
-WEATHER_API_KEY = os.getenv("WEATHER_API_KEY")
 
 class UserState(StatesGroup):
     changing_city = State()
-
-# в fetch_weather и search_cities добавлены retry-декораторы
-# для устойчивости и логика защиты от сбоев API запросов
-async def fetch_weather(city: str = None, city_id: str = None, retries: int = 3) -> dict | None:
-    if not city and not city_id:
-        return None
-
-    params = {
-        "key": WEATHER_API_KEY,
-        "lang": "ru",
-        "q": f"id:{city_id}" if city_id else city
-    }
-
-    for attempt in range(retries):
-        try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(
-                    "http://api.weatherapi.com/v1/current.json",
-                    params=params
-                ) as response:
-                    if response.status == 200:
-                        return await response.json()
-                    logging.warning(f"WeatherAPI returned status {response.status}")
-        except Exception as e:
-            logging.error(f"Weather API error on attempt {attempt + 1}: {e}")
-
-        await asyncio.sleep(1)
-
-    return None
-
-async def search_cities(query: str, retries: int = 3) -> list | None:
-    if len(query) < 2:
-        return None
-
-    for attempt in range(retries):
-        try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(
-                    "http://api.weatherapi.com/v1/search.json",
-                    params={"key": WEATHER_API_KEY, "q": query}
-                ) as response:
-                    if response.status == 200:
-                        return await response.json()
-                    logging.warning(f"City search failed with status {response.status}")
-        except Exception as e:
-            logging.error(f"City search error on attempt {attempt + 1}: {e}")
-
-        await asyncio.sleep(1)
-
-    return None
 
 # --- Хэндлеры / роутеры
 @router.message(Command("start"))
@@ -112,18 +60,18 @@ async def show_weather(user_id: int, message: Message):
     )
 
 #  Magic фильтр на кнопку чо по погоде
-@router.message(F.text == '🤌🏻 Чо по погоде ?')
+@router.message(F.text == '👀Чо по погоде ?')
 async def handle_weather(message: Message):
     await show_weather(message.from_user.id, message)
 
 #  Magic фильтр на кнопку город
 @router.message(F.text == 'чо по городу 🤌🏻')
 async def show_city(message: Message):
-    user_city = await db.get_user_city(message.from_user.id)
+    user_city = db.get_user_city(message.from_user.id)
 
     await message.answer(
-        f"📍Ты че забыл? {user_city.city} 🤭"
-        if user_city and user_city.city
+        f"📍Ты че забыл? {user_city[0]} 🤭"
+        if user_city and user_city[0]
         else "❌ Город не установлен. Нажми 'поменять что-то в жизни'"
     )
 
