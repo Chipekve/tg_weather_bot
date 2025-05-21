@@ -1,15 +1,15 @@
 import asyncio
 import logging
-import colorlog
 import os
 
+import colorlog
 from dotenv import load_dotenv
 from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
-from my_handlers import router
+from handlers import routers
 from database import db
 
-# Настройка цвЯтного логирования
+
 def setup_logging():
     handler = colorlog.StreamHandler()
     handler.setFormatter(colorlog.ColoredFormatter(
@@ -22,38 +22,19 @@ def setup_logging():
             'CRITICAL': 'red,bg_white',
         }
     ))
-    logging.basicConfig(
-        level=logging.INFO,
-        handlers=[handler]
-    )
+    logging.basicConfig(level=logging.INFO, handlers=[handler])
 
-#  Глобально создаём bot — чтобы потом в shutdown его закрыть (уебать)
-load_dotenv()
-BOT_TOKEN = os.getenv("BOT_TOKEN", "").strip()
-bot = Bot(token=BOT_TOKEN)
-dp = Dispatcher(storage=MemoryStorage())
-dp.include_router(router)
-storage = MemoryStorage()
 
-#  graceful_shutdown_функция
-async def shutdown():
-    logging.info(">>> [SHUTDOWN] Закрываем ресурсы...")
-    await bot.session.close()
-    db.close()
-    logging.info(">>> [SHUTDOWN] Готово!")
-
-def get_shutdown_handler(bot: Bot, dp: Dispatcher):
-    async def shutdown():
-        logging.info(">>> [SHUTDOWN] Завершаем работу бота...")
-        await bot.session.close()
-        db.close()
-        logging.info(">>> [SHUTDOWN] Куда ты там разгоняешься? ✋🏻")
-    return shutdown
-
-# Точка входа
 async def main():
     setup_logging()
+    load_dotenv()
     logger = logging.getLogger(__name__)
+
+    BOT_TOKEN = os.getenv("BOT_TOKEN", "").strip()
+    bot = Bot(token=BOT_TOKEN)
+    dp = Dispatcher(storage=MemoryStorage())
+    for router in routers:
+        dp.include_router(router)
 
     try:
         logger.info("Ребята мы разгоняемся 🚁")
@@ -61,7 +42,10 @@ async def main():
     except Exception as e:
         logger.critical(f"Критическая ошибка: {e}", exc_info=True)
     finally:
-        await shutdown()
+        logger.info(">>> [SHUTDOWN] Завершаем работу...")
+        await bot.session.close()
+        db.close()
+        logger.info(">>> [SHUTDOWN] Готово!")
 
 
 if __name__ == "__main__":
