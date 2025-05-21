@@ -5,7 +5,7 @@ from .popular import router as popular_cities_router
 
 routers = [
     start_router,
+    popular_cities_router,
     city_selection_router,
-    weather_router,
-    popular_cities_router
+    weather_router
 ]

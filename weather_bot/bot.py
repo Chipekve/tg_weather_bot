@@ -9,7 +9,6 @@ from aiogram.fsm.storage.memory import MemoryStorage
 from handlers import routers
 from database import db
 
-
 def setup_logging():
     handler = colorlog.StreamHandler()
     handler.setFormatter(colorlog.ColoredFormatter(
