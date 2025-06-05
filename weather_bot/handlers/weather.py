@@ -3,11 +3,52 @@ import logging
 
 from emoji import EMOJI_DATA
 from aiogram import Router, F
-from aiogram.types import Message
+from aiogram.types import Message, CallbackQuery
 from database import db
 from weather_api import fetch_weather
 
 router = Router()
+
+async def format_forecast(weather: dict) -> str:
+    location = weather.get("location", {})
+    forecast_days = weather.get("forecast", {}).get("forecastday", [])
+
+    if not location or not forecast_days:
+        return "⚠️ Не удалось получить прогноз."
+
+    text = f"📅 Прогноз погоды на 3 дня для <b>{location.get('name')}</b>:\n\n"
+
+    for day in forecast_days:
+        date = day.get("date")
+        day_info = day.get("day", {})
+        condition = day_info.get("condition", {}).get("text", "")
+        max_temp = day_info.get("maxtemp_c")
+        min_temp = day_info.get("mintemp_c")
+        text += (
+            f"<b>{date}</b>:\n"
+            f"  • Состояние: {condition}\n"
+            f"  • Макс: {max_temp}°C, Мин: {min_temp}°C\n\n"
+        )
+    return text
+
+# Новый хэндлер для 3-дневного прогноза (по тексту)
+@router.message(F.text == "прогноз на 3 дня")
+async def handle_3day_forecast(message: Message):
+    user_id = message.from_user.id
+    user_city = db.get_user_city(user_id)
+
+    if not user_city or not user_city[0]:
+        await message.answer("❌ Сначала укажи город через кнопку 'поменять что-то в жизни'")
+        return
+
+    weather = await fetch_weather(city=user_city[0], city_id=user_city[1], forecast_days=3)
+
+    if not weather:
+        await message.answer("⚠️ Не удалось получить прогноз. Попробуй позже.")
+        return
+
+    text = await format_forecast(weather)
+    await message.answer(text, parse_mode="HTML")
 
 # Функция форматирования погоды
 async def format_weather(weather: dict) -> str:
