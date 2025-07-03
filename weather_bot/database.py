@@ -1,49 +1,61 @@
 import os
+import logging
+
 from typing import Optional, Tuple
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, select
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy import BigInteger, String, Column
+from sqlalchemy import BigInteger, String, Column, Boolean, Integer
+
 from dotenv import load_dotenv
-import logging
 
 load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///users.db")  # fallback на SQLite
 
-engine = create_engine(DATABASE_URL, echo=False)
+engine = create_engine(
+    DATABASE_URL,
+    echo=False,
+    pool_pre_ping=True,
+)
 SessionLocal = sessionmaker(bind=engine)
 
 Base = declarative_base()
 
 
 class User(Base):
-    __tablename__ = 'users'
+    __tablename__ = "users"
 
-    user_id = Column(BigInteger, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    telegram_id = Column(BigInteger, unique=True, nullable=False)
     username = Column(String)
     city = Column(String)
     city_id = Column(String)
+    is_subscribed = Column(Boolean, default=False)
 
 
 class Database:
     def __init__(self):
         Base.metadata.create_all(bind=engine)
 
-    def save_user_city(self, user_id: int, username: str, city: str, city_id: Optional[str] = None):
+    def save_user_city(
+        self, telegram_id: int, username: str, city: str, city_id: Optional[str] = None
+    ):
         session: Session = SessionLocal()
         try:
-            user = session.get(User, user_id)
+            user = session.execute(
+                select(User).where(User.telegram_id == telegram_id)
+            ).scalar_one_or_none()
             if user:
                 user.username = username or "anonymous"
                 user.city = city
                 user.city_id = city_id
             else:
                 user = User(
-                    user_id=user_id,
+                    telegram_id=telegram_id,
                     username=username or "anonymous",
                     city=city,
-                    city_id=city_id
+                    city_id=city_id,
                 )
                 session.add(user)
             session.commit()
@@ -52,13 +64,18 @@ class Database:
             logging.error(f"Ошибка при сохранении пользователя: {e}", exc_info=True)
         finally:
             session.close()
+
     def close(self):
         engine.dispose()
 
-    def get_user_city(self, user_id: int) -> Optional[Tuple[Optional[str], Optional[str]]]:
+    def get_user_city(
+        self, telegram_id: int
+    ) -> Optional[Tuple[Optional[str], Optional[str]]]:
         session: Session = SessionLocal()
         try:
-            user = session.get(User, user_id)
+            user = session.execute(
+                select(User).where(User.telegram_id == telegram_id)
+            ).scalar_one_or_none()
             if user:
                 return user.city, user.city_id
             return None
@@ -67,5 +84,60 @@ class Database:
             return None
         finally:
             session.close()
+
+    def get_user_by_id(self, telegram_id: int) -> Optional[User]:
+        session: Session = SessionLocal()
+        try:
+            user = session.execute(
+                select(User).where(User.telegram_id == telegram_id)
+            ).scalar_one_or_none()
+            return user
+        except SQLAlchemyError as e:
+            logging.error(f"Ошибка при получении пользователя: {e}", exc_info=True)
+            return None
+        finally:
+            session.close()
+
+    def add_user(self, telegram_id: int, username: Optional[str] = None) -> None:
+        session: Session = SessionLocal()
+        try:
+            new_user = User(telegram_id=telegram_id, username=username)
+            session.add(new_user)
+            session.commit()
+        except SQLAlchemyError as e:
+            logging.error(f"Ошибка при добавлении пользователя: {e}", exc_info=True)
+            session.rollback()
+        finally:
+            session.close()
+
+    def get_all_users(self) -> list[User]:
+        session: Session = SessionLocal()
+        try:
+            users = session.execute(select(User)).scalars().all()
+            return users
+        except SQLAlchemyError as e:
+            logging.error(f"Ошибка при получении всех пользователей: {e}", exc_info=True)
+            return []
+        finally:
+            session.close()
+
+    def toggle_subscription(self, telegram_id: int) -> Optional[bool]:
+        session: Session = SessionLocal()
+        try:
+            user = session.execute(
+                select(User).where(User.telegram_id == telegram_id)
+            ).scalar_one_or_none()
+            if user:
+                user.is_subscribed = not user.is_subscribed
+                session.commit()
+                return user.is_subscribed
+            return None
+        except SQLAlchemyError as e:
+            session.rollback()
+            logging.error(f"Ошибка при переключении подписки: {e}", exc_info=True)
+            return None
+        finally:
+            session.close()
+
 
 db = Database()
