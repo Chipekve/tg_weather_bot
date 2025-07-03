@@ -35,12 +35,23 @@ class User(Base):
 
 
 class Database:
+    """Класс для работы с базой данных пользователей."""
+    
     def __init__(self):
         Base.metadata.create_all(bind=engine)
 
     def save_user_city(
         self, telegram_id: int, username: str, city: str, city_id: Optional[str] = None
     ):
+        """
+        Сохраняет или обновляет город пользователя.
+        
+        Args:
+            telegram_id: Telegram ID пользователя
+            username: Имя пользователя
+            city: Название города
+            city_id: ID города в WeatherAPI
+        """
         session: Session = SessionLocal()
         try:
             user = session.execute(
@@ -66,11 +77,21 @@ class Database:
             session.close()
 
     def close(self):
+        """Закрывает соединение с базой данных."""
         engine.dispose()
 
     def get_user_city(
         self, telegram_id: int
     ) -> Optional[Tuple[Optional[str], Optional[str]]]:
+        """
+        Получает город пользователя.
+        
+        Args:
+            telegram_id: Telegram ID пользователя
+            
+        Returns:
+            Кортеж (название города, ID города) или None
+        """
         session: Session = SessionLocal()
         try:
             user = session.execute(
@@ -86,6 +107,15 @@ class Database:
             session.close()
 
     def get_user_by_id(self, telegram_id: int) -> Optional[User]:
+        """
+        Получает пользователя по Telegram ID.
+        
+        Args:
+            telegram_id: Telegram ID пользователя
+            
+        Returns:
+            Объект User или None
+        """
         session: Session = SessionLocal()
         try:
             user = session.execute(
@@ -99,6 +129,13 @@ class Database:
             session.close()
 
     def add_user(self, telegram_id: int, username: Optional[str] = None) -> None:
+        """
+        Добавляет нового пользователя.
+        
+        Args:
+            telegram_id: Telegram ID пользователя
+            username: Имя пользователя (опционально)
+        """
         session: Session = SessionLocal()
         try:
             new_user = User(telegram_id=telegram_id, username=username)
@@ -111,6 +148,12 @@ class Database:
             session.close()
 
     def get_all_users(self) -> list[User]:
+        """
+        Получает всех пользователей.
+        
+        Returns:
+            Список всех пользователей
+        """
         session: Session = SessionLocal()
         try:
             users = session.execute(select(User)).scalars().all()
@@ -122,6 +165,15 @@ class Database:
             session.close()
 
     def toggle_subscription(self, telegram_id: int) -> Optional[bool]:
+        """
+        Переключает статус подписки пользователя.
+        
+        Args:
+            telegram_id: Telegram ID пользователя
+            
+        Returns:
+            Новый статус подписки или None при ошибке
+        """
         session: Session = SessionLocal()
         try:
             user = session.execute(

@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  # PostgreSQL база данных
+  postgres:
+    image: postgres:15-alpine
+    container_name: weather_bot_db
+    environment:
+      POSTGRES_DB: weather_bot
+      POSTGRES_USER: weather_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    networks:
+      - weather_network
+
+  # Telegram бот
+  bot:
+    build: .
+    container_name: weather_bot
+    environment:
+      - BOT_TOKEN=${BOT_TOKEN}
+      - WEATHER_API_KEY=${WEATHER_API_KEY}
+      - DATABASE_URL=postgresql://weather_user:${DB_PASSWORD}@postgres:5432/weather_bot
+    depends_on:
+      - postgres
+    restart: unless-stopped
+    networks:
+      - weather_network
+    volumes:
+      - ./logs:/app/logs
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  weather_network:
+    driver: bridge 

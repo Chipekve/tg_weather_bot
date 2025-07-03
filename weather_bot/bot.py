@@ -12,6 +12,7 @@ from handlers import routers
 from database import db, Database
 from keyboards import get_reply_menu
 from handlers.weather_sender import send_weather_to_subscribers
+from middlewares import ThrottlingMiddleware
 
 
 # Настройка цветного логгирования
@@ -39,21 +40,15 @@ async def periodic_weather_task(bot: Bot, interval: int = 15) -> None:
 
 async def broadcast_reply_keyboards(bot: Bot, db: Database):
     users = await asyncio.to_thread(db.get_all_users)
-
     for user in users:
         try:
-            await bot.send_chat_action(user.telegram_id, action="typing")
             await bot.send_message(
                 chat_id=user.telegram_id,
-                text="клавиатура обновлена",
+                text="Клавиатура обновлена",
                 reply_markup=get_reply_menu(user.is_subscribed),
             )
-        except (TelegramForbiddenError, TelegramNotFound):
-            logging.warning(f"Пользователь {user.telegram_id} недоступен.")
         except Exception as e:
-            logging.error(f"Ошибка при рассылке клавиатуры: {e}", exc_info=True)
-
-    logging.info("Обновление клавиатур завершено.")
+            logging.warning(f"Не удалось обновить клавиатуру для пользователя {user.telegram_id}: {e}")
 
 async def main() -> None:
     setup_logging()
@@ -67,6 +62,11 @@ async def main() -> None:
 
     bot = Bot(token=BOT_TOKEN)
     dp = Dispatcher(storage=MemoryStorage())
+
+    # Подключаем защиту от спама
+    dp.message.middleware(ThrottlingMiddleware(rate_limit=1.5))
+
+    # Рассылаем новую клавиатуру всем пользователям
     await broadcast_reply_keyboards(bot, db)
 
     # Регистрируем роутеры

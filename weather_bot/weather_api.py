@@ -2,6 +2,7 @@ import aiohttp
 import asyncio
 import logging
 import os
+from typing import Optional, List, Dict, Any
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -11,11 +12,11 @@ BASE_URL = "http://api.weatherapi.com/v1"
 
 
 async def fetch_weather(
-    city: str = None,
-    city_id: str = None,
+    city: Optional[str] = None,
+    city_id: Optional[str] = None,
     retries: int = 3,
-    forecast_days: int | None = None,
-) -> dict | None:
+    forecast_days: Optional[int] = None,
+) -> Optional[Dict[str, Any]]:
     if not city and not city_id:
         return None
 
@@ -46,7 +47,7 @@ async def fetch_weather(
     return None
 
 
-async def search_cities(query: str, retries: int = 3) -> list | None:
+async def search_cities(query: str, retries: int = 3) -> Optional[List[Dict[str, Any]]]:
     if len(query) < 2:
         return None
 

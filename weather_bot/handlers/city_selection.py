@@ -7,7 +7,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 
 from weather_api import search_cities
-from keyboards import cities_keyboard, cancel_city_change_keyboard
+from keyboards import cities_keyboard, cancel_city_change_keyboard, BTN_CHANGE_CITY, BTN_CITY, BTN_FORECAST, BTN_WEATHER
 from database import db
 from .weather import show_weather, show_city, handle_3day_forecast
 
@@ -20,7 +20,7 @@ class UserState(StatesGroup):
 
 
 # Начинаем процесс смены города — просим ввести название
-@router.message(F.text == "поменять что-то в жизни")
+@router.message(F.text == BTN_CHANGE_CITY)
 async def start_city_change(message: Message, state: FSMContext, bot: Bot):
     state_data = await state.get_data()
     old_msg_id = state_data.get("temp_msg_id")
@@ -49,6 +49,7 @@ async def start_city_change(message: Message, state: FSMContext, bot: Bot):
         reply_markup=cancel_city_change_keyboard()
     )
     await state.update_data(temp_msg_id=msg.message_id)
+
 
 @router.callback_query(F.data == "cancel_city_change")
 async def cancel_city_change(callback: CallbackQuery, state: FSMContext):
@@ -91,9 +92,9 @@ async def cancel_city_change(callback: CallbackQuery, state: FSMContext):
 @router.message(UserState.changing_city)
 async def process_city(message: Message, state: FSMContext, bot: Bot):
     INTERRUPT_BUTTONS = {
-        "👀Чо по погоде ?": "show_weather",
-        "чо по городу 🤌🏻": "show_city",
-        "прогноз на 3 дня": "handle_3day_forecast",
+        BTN_WEATHER: "show_weather",
+        BTN_CITY: "show_city",
+        BTN_FORECAST: "handle_3day_forecast",
     }
 
     if message.text in INTERRUPT_BUTTONS:

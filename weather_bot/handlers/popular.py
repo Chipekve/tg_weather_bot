@@ -3,14 +3,14 @@ import logging
 from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery
 from weather_api import fetch_weather
-from keyboards import get_popular_cities_keyboard
+from keyboards import get_popular_cities_keyboard, BTN_POPULAR
 from .weather import format_weather
 
 router = Router()
 
 
 # Обработка нажатия кнопки "Популярные города"
-@router.message(F.text == "Популярные города")
+@router.message(F.text == BTN_POPULAR)
 async def handle_popular_cities(message: Message):
     keyboard = get_popular_cities_keyboard(page=0)
     await message.answer("📍 Выбери популярный город:", reply_markup=keyboard)

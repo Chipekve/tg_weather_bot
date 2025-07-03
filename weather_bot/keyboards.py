@@ -7,24 +7,32 @@ from aiogram.types import (
 from popular_cities import POPULAR_CITIES, POPULAR_PAGE
 from typing import List, Dict
 
+# --- КОНСТАНТЫ КНОПОК ---
+BTN_CHANGE_CITY = "поменять что-то в жизни"
+BTN_WEATHER = "👀Чо по погоде ?"
+BTN_CITY = "чо по городу 🤌🏻"
+BTN_POPULAR = "Популярные города"
+BTN_FORECAST = "прогноз на 3 дня"
+BTN_SUBSCRIBE = "📬 Включить автосообщения"
+BTN_UNSUBSCRIBE = "🔕 Выключить автосообщения"
 
 CITIES_PER_PAGE = 3
 
 # --- reply кнопкА
 def get_reply_menu(is_subscribed: bool):
     sub_text = (
-        "🔕 Выключить автосообщения" if is_subscribed else "📬 Включить автосообщения"
+        BTN_UNSUBSCRIBE if is_subscribed else BTN_SUBSCRIBE
     )
     keyboard = [
         [
-            KeyboardButton(text="поменять что-то в жизни"),
-            KeyboardButton(text="👀Чо по погоде ?"),
+            KeyboardButton(text=BTN_CHANGE_CITY),
+            KeyboardButton(text=BTN_WEATHER),
         ],
         [
-            KeyboardButton(text="чо по городу 🤌🏻"),
-            KeyboardButton(text="Популярные города"),
+            KeyboardButton(text=BTN_CITY),
+            KeyboardButton(text=BTN_POPULAR),
         ],
-        [KeyboardButton(text="прогноз на 3 дня")],
+        [KeyboardButton(text=BTN_FORECAST)],
         [KeyboardButton(text=sub_text)],
     ]
     return ReplyKeyboardMarkup(

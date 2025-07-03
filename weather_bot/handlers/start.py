@@ -2,7 +2,7 @@ import asyncio
 from aiogram import Router, F
 from aiogram.filters import Command
 from aiogram.types import Message
-from keyboards import get_reply_menu
+from keyboards import get_reply_menu, BTN_SUBSCRIBE, BTN_UNSUBSCRIBE
 from database import db
 
 router = Router()
@@ -31,7 +31,7 @@ async def cmd_start(message: Message):
         )
 
 
-@router.message(F.text.in_({"📬 Включить автосообщения", "🔕 Выключить автосообщения"}))
+@router.message(F.text.in_({BTN_SUBSCRIBE, BTN_UNSUBSCRIBE}))
 async def toggle_subscription_handler(message: Message):
     user_id = message.from_user.id
 

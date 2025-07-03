@@ -7,6 +7,7 @@ from aiogram.types import Message
 from aiogram.fsm.context import FSMContext
 from database import db
 from weather_api import fetch_weather
+from keyboards import BTN_FORECAST, BTN_CITY
 
 router = Router()
 
@@ -35,7 +36,7 @@ async def format_forecast(weather: dict) -> str:
 
 
 # Новый хэндлер для 3-дневного прогноза (по тексту)
-@router.message(F.text == "прогноз на 3 дня")
+@router.message(F.text == BTN_FORECAST)
 async def handle_3day_forecast(message: Message):
     user_id = message.from_user.id
     user_city = db.get_user_city(user_id)
@@ -98,7 +99,7 @@ async def handle_weather(message: Message, ):
 
 
 # Хэндлер на кнопку "чо по городу"
-@router.message(F.text == "чо по городу 🤌🏻")
+@router.message(F.text == BTN_CITY)
 async def show_city(message: Message):
     user_city = db.get_user_city(message.from_user.id)
 

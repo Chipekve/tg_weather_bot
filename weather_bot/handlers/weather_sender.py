@@ -1,5 +1,6 @@
 import os
 import requests
+import logging
 from datetime import datetime
 from aiogram import Bot
 from database import SessionLocal, User
@@ -89,6 +90,6 @@ async def send_weather_to_subscribers(bot: Bot):
                     parse_mode='HTML'
                 )
             except Exception as e:
-                print(f"⚠️ Не удалось отправить сообщение {user.telegram_id}: {e}")
+                logging.error(f"⚠️ Не удалось отправить сообщение {user.telegram_id}: {e}")
     finally:
         session.close()
