@@ -33,6 +33,7 @@ services:
       - weather_network
     volumes:
       - ./weather_bot/logs:/app/logs
+      - ./weather_bot:/app
 
 volumes:
   postgres_data:
