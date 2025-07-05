@@ -9,7 +9,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 # Добавляем корневую директорию в путь
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "weather_bot"))
 
 from database import Base, User as DBUser
 import weather_api
