@@ -7,7 +7,7 @@ from aiogram.types import Message
 from aiogram.fsm.context import FSMContext
 from database import db
 from weather_api import fetch_weather
-from keyboards import BTN_FORECAST, BTN_CITY
+from keyboards import BTN_FORECAST, BTN_CITY, BTN_WEATHER
 
 router = Router()
 
@@ -93,7 +93,7 @@ async def show_weather(user_id: int, message: Message):
 
 
 # Хэндлер на кнопку "чо по погоде"
-@router.message(F.text == "👀Чо по погоде ?")
+@router.message(F.text == BTN_WEATHER)
 async def handle_weather(message: Message, ):
     await show_weather(message.from_user.id, message)
 
