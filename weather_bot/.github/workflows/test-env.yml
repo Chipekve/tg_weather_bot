@@ -1,0 +1,7 @@
+# Переменные окружения для тестов в CI/CD
+# Эти переменные используются только для тестирования
+
+BOT_TOKEN: "test_bot_token_12345"
+WEATHER_API_KEY: "test_weather_api_key_67890"
+DATABASE_URL: "sqlite:///test.db"
+DB_PASSWORD: "test_password" 
