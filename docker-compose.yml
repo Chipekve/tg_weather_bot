@@ -20,7 +20,7 @@ services:
 
   # Telegram бот
   bot:
-    build: .
+    image: chipekve/weather-bot:latest
     container_name: weather_bot
     environment:
       - BOT_TOKEN=${BOT_TOKEN}
