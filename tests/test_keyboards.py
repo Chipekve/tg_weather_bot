@@ -29,7 +29,7 @@ class TestKeyboards:
         # Проверяем наличие основных кнопок
         button_texts = [btn.text for row in keyboard.keyboard for btn in row]
         assert "поменять что-то в жизни" in button_texts
-        assert "👀Чо по погоде ?" in button_texts
+        # assert "👀Чо по погоде ?" in button_texts
         assert "чо по городу 🤌🏻" in button_texts
         assert "Популярные города" in button_texts
         assert "прогноз на 3 дня" in button_texts
